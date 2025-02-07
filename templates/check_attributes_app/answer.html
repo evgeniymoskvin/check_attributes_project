@@ -1,0 +1,170 @@
+<div class="d-flex flex-column mt-5 inside_result">
+
+    <div class="d-flex text-32px-bold">
+        Готово
+    </div>
+    <div class="d-flex flex-row mt-3">
+        <div class="d-flex text-20px-regular">Допуск:&nbsp;</div>
+        <div class="d-flex text-20px-bold">{{ clearance }} мм</div>
+    </div>
+    <div class="d-flex flex-row">
+        <div class="d-flex text-20px-regular">PDF файлов:&nbsp;</div>
+        <div class="d-flex text-20px-bold">{{ good_files }} из {{ files_count }}</div>
+    </div>
+    <div class="d-flex flex-row">
+        <div class="d-flex text-20px-regular">Распознано листов:&nbsp;</div>
+        <div class="d-flex text-20px-bold">{{ all_lists_approve }} из {{ all_lists_count }}</div>
+    </div>
+    <div class="d-flex flex-row">
+        <div class="d-flex text-20px-regular">Всего форматов А4:&nbsp;</div>
+        <div class="d-flex text-20px-bold">{{ all_files_format }}</div>
+    </div>
+
+
+    <button type="button" class="d-flex mt-3 button_blue_details_outline"
+            data-ajax-name='{{ key }}'
+            data-ajax-count-pages="{{ value.count_pages }}"
+            data-ajax-json='{{ value.good_lists }}'
+            data-ajax-a4formats='{{ value.a4_count }}'
+            data-ajax-all-file-lists='{{ value.list_pages }}'
+            data-ajax-bad-json='{{ value.pdf_unknown_size_file }}'
+            onclick="sendFile(this)">
+        Отправить на печать
+    </button>
+
+    {% if good_files > 1 and user.is_authenticated %}
+        <div class="d-flex mt-5 w-100">
+            <button type="button" id="send_merged_button" data-ajax-url="{% url 'print-send-merged' %}"
+                    onclick="onClickMergeAndPrint()" class="button_blue_merge_result">Объединить в одну заявку
+                и отправить
+                на печать
+            </button>
+        </div>
+    {% endif %}
+
+    {% if good_files > 1 %}
+        <div class="d-flex mt-2 w-100 mb-5">
+            <button onclick="clearResult()" class="button_blue_clean_result">Очистить
+                результат
+            </button>
+        </div>
+    {% else %}
+        <div class="d-flex mt-5 w-100 mb-5">
+            <button onclick="clearResult()" class="button_blue_clean_result">Очистить
+                результат
+            </button>
+        </div>
+    {% endif %}
+
+
+</div>
+
+
+<script>
+    //Перемещение окна
+    $('.modal-dialog').draggable({
+        handle: ".modal-header"
+    });
+    let allFiles = new DataTransfer()
+
+    //Значение допуска и файлы печатаем в консоль для проверки
+    $(function () {
+        var cookieObjectValue = (document.cookie.match('(^|; )' + encodeURIComponent('clearance') + '=([^;]+)') || []).pop() || null;
+        console.log(cookieObjectValue)
+        var fileInput = document.getElementById('id_file')
+        console.log('fileInput.files', fileInput.files)
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const file = fileInput.files[i]
+            allFiles.items.add(file)
+        }
+        console.log('allFiles.files', allFiles.files)
+    })
+
+
+    // Скачивание бланка больше не актуально
+    function downloadBlanc(blancName) {
+        var name_file = $(blancName).attr("data-ajax-name")
+        var url_blanc = $(blancName).attr("data-ajax-url")
+        var data_ajax_json = $(blancName).attr("data-ajax-json")
+        console.log(blancName)
+        console.log(name_file)
+        console.log(url_blanc)
+        console.log(data_ajax_json)
+        console.log(data_ajax_all_file_lists)
+
+        $.ajax({
+            type: "GET",// формируем AJAX запрос
+            url: url_blanc,                    // подгружаем URL адрес для запроса
+            data: {
+                'file_name': name_file,
+                'json': data_ajax_json// добавляем objectID в query параметры GET запроса
+            },
+            success: function (data) {   // `data` результат выполнения  функции `load_contract`
+                console.log('Done')
+            }
+        })
+    }
+
+    // Отправка файла(задачи) на печать
+    $('#form_send_one_file').submit(function (e) {
+            e.preventDefault()
+            {
+                let nameFile = document.getElementById('temp_file_name').innerText
+                console.log(nameFile)
+                if (nameFile != 'Merged_file') {
+                    sendCurrentFile()
+                } else {
+                    sendMergedFile()
+                }
+            }
+        }
+    )
+
+
+    function sendCurrentFile() {
+        var fileInput = document.getElementById('id_file')
+        console.log(fileInput.files)
+        console.log(allFiles.files)
+        {#console.log(el)#}
+        var inputSendFile = document.getElementById('send_file')
+        let sendfile = new DataTransfer()
+        var name_file = $('#temp_file_name').text()
+        console.log('name_file', name_file)
+
+        for (let i = 0; i < allFiles.files.length; i++) {
+            const file = fileInput.files[i]
+            if (file.name === name_file) {
+                sendfile.items.add(file)
+            }
+        }
+        inputSendFile.files = sendfile.files
+        console.log('sendfile', sendfile.files);
+        console.log('inputSendFile', inputSendFile.files)
+
+        var url = $(inputSendFile).attr('data-ajax-url')
+        var data = new FormData($('#form_send_one_file').get(0))
+
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: data,
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function (data) {
+                document.getElementById('send_file_modal_text').innerText = data
+                $('#sendFileModal').modal('hide');
+                $('#good_send_modal').modal('show');
+            },
+            error: function () {
+                $('#sendFileModal').modal('hide');
+                $('#bad_send_modal').modal('show');
+            }
+        })
+
+
+    }
+
+
+</script>

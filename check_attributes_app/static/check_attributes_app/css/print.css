@@ -1,0 +1,9 @@
+@media print {
+    .container{
+        max-width: 100%;
+    }
+
+    .button_blue{
+        display: none;
+    }
+}

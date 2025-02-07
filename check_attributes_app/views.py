@@ -1,0 +1,118 @@
+import datetime
+import uuid
+
+from django.shortcuts import render
+from .forms import UploadFileForm
+from django.views import View
+from django.http import HttpResponse, JsonResponse
+import os
+import openpyxl
+from django.utils.encoding import escape_uri_path
+
+
+# Create your views here.
+def handle_uploaded_file(f):
+    """
+    Функция для загрузки файлов
+    """
+    with open(f"{f.name}", "wb+") as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+
+
+class IndexView(View):
+    """Главная страница"""
+
+    def get(self, request):
+        form = UploadFileForm()  # Форма выгрузки файла
+        content = {'form': form,
+                   }
+        resp = render(request, 'check_attributes_app/index.html', content)
+        return resp
+
+    def post(self, request):
+
+        f = request.FILES["file"]
+        extension = "." + str(f).split('.')[-1]
+        file_name_input = str(f).split('.')[-2]
+        path_to_input_file = os.path.join(f'{uuid.uuid4()}{extension}')
+
+        print(path_to_input_file)
+        with open(path_to_input_file, "wb") as destination:
+            for chunk in f.chunks():
+                destination.write(chunk)
+
+        # Создаем новый файл
+        new_excel_file = openpyxl.Workbook()
+        ws_new_excel_file = new_excel_file.active
+        ws_new_excel_file.title = 'Export'
+
+        my_red = openpyxl.styles.colors.Color(rgb='00FF0000')
+        my_fill = openpyxl.styles.fills.PatternFill(patternType='solid', fgColor=my_red)
+
+        wb = openpyxl.load_workbook(filename=path_to_input_file, data_only=True)
+        worksheet = wb.active
+        book_len = worksheet.max_row
+        book_width = worksheet.max_column
+
+        # Удаляем столбцы
+        input_columns = []
+        count_of_null_columns = 0  # Счетчик пустых колонок
+        for column in range(1, book_width + 1):
+            count = 0
+            for row in range(2, book_len + 1):
+                if not worksheet.cell(row, column).value:
+                    count += 1
+            print(f'Столбец {column} -пустых ячеек {count}')
+            input_columns.append(str(worksheet.cell(1, column).value).replace('\n', ' '))
+            if count + 1 == book_len:
+                count_of_null_columns += 1
+                print(f'Столбец {column} -все ячейки пустые')
+                worksheet.delete_cols(column)
+        print('-----')
+        print(f'Пустых колонок {count_of_null_columns}')
+
+        # Удаляем строки
+        count_of_null_rows = 0
+        for row in range(2, book_len + 1):
+            count = 0
+            for column in range(1, book_width + 1):
+                if worksheet.cell(row, column).value:
+                    count += 1
+            # print(f'Строка {row} - Заполненных ячеек')
+            if count == book_width:
+                count_of_null_rows += 1
+                print(f'Строка {row} - все ячейки заполнены')
+                worksheet.delete_rows(row)
+
+        # Сохраняем во временный
+        temp_file_path_full = 'temp.xlsx'
+        wb.save(temp_file_path_full)
+
+        wb = openpyxl.load_workbook(filename=temp_file_path_full, data_only=True)
+        worksheet = wb.active
+        book_len = worksheet.max_row
+        book_width = worksheet.max_column
+
+        # Красим
+        count_fill = 0
+        for column in range(1, book_width + 1):
+            for row in range(2, book_len + 1):
+                if not worksheet.cell(row, column).value:
+                    count_fill += 1
+                    worksheet.cell(row, column).fill = my_fill
+        file_to_export = f'export.xlsx'
+        wb.save(file_to_export)
+        print(request.POST)
+        print(request.FILES)
+
+        with open(file_to_export, 'rb') as fh:
+            # Установка mimetype для правильной обработки браузером
+            mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            response = HttpResponse(fh.read(), content_type=mime_type)
+            response['Content-Disposition'] = 'attachment; filename=' + escape_uri_path(
+                f'{file_name_input}_{datetime.datetime.now().year}-{datetime.datetime.now().month}-{datetime.datetime.now().day}-{datetime.datetime.now().hour}:{datetime.datetime.now().minute}:{datetime.datetime.now().second}.xlsx')
+        os.remove(path_to_input_file)
+        os.remove(temp_file_path_full)
+
+        return response
