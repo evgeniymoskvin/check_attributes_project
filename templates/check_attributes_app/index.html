@@ -8,20 +8,23 @@
     <div class="d-flex flex-column w-100 align-items-center justify-content-center" id="all_file_block">
         <form method="POST" class="my_form d-flex w-100 flex-column align-items-center justify-content-center"
               id="form_send_file"
-              enctype="multipart/form-data">
-            <div class="w-50 d-flex flex-column" id="start_body" >
-                <div class="d-flex w-100 align-items-center justify-content-start" >
+              data-ajax-url={% url 'index' %}
+                      enctype="multipart/form-data">
+            <div class="w-50 d-flex flex-column" id="start_body">
+                <div class="d-flex w-100 align-items-center justify-content-start">
                     {#                <div class="d-flex text-32px-bold" style="line-height: 110%">#}
                     {#                    Подсчет форматов <br><span class="text-32px-regular">прием заявок на печать</span>#}
                     {#                </div>#}
-                    <div class="d-flex flex-column w-100" >
+                    <div class="d-flex flex-column w-100">
                         <div class="d-flex text-32px-bold w-100">
                             Проверка атрибутов ИМ
                         </div>
-                        <div class="text-24px-light w-100" style="margin-top: -5px">Удаляем строки и столбцы, красим в красный</div>
+                        <div class="text-24px-light w-100" style="margin-top: -5px">Удаляем строки и столбцы, красим в
+                            красный
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex w-100" >
+                <div class="d-flex w-100">
                     {% csrf_token %}
                     {{ form }}
                 </div>
@@ -32,7 +35,9 @@
         <div id="loader-big" class=" w-100 align-items-center justify-content-center d-none flex-column">
             <p class="text-18px-bold d-flex" style="color: #202022">Работаем</p>
             <span class="loader-big d-flex"></span>
-            <div id="to_index" class="d-flex align-items-center text-16px-regular link_dot_decoration" onclick="location.reload();">На главную</div>
+            <div id="to_index" class="d-flex align-items-center text-16px-regular link_dot_decoration"
+                 onclick="location.reload();">На главную
+            </div>
         </div>
 
         <div id="drop_file" class=" w-100 align-items-center justify-content-center d-none flex-column">
@@ -203,20 +208,12 @@
         }
 
         // если файлы добавили не через drag and drop
-        $('#id_file').change(function () {
-            $('#start_body').removeClass('d-flex')
-            $('#start_body').addClass('d-none')
-            $('#clearance_info').removeClass('d-flex')
-            $('#clearance_info').addClass('d-none')
-            $('#drop_file').removeClass('d-flex')
-            $('#drop_file').addClass('d-none')
-            $('body').addClass('grey_background')
-            $('#loader-big').removeClass('d-none')
-            $('#loader-big').addClass('d-flex')
+        document.getElementById("id_file").onchange = function () {
             $('#form_send_file').submit();
-            //sendFile()
-        });
-        document.getElementById("file").onchange = function () {
+        };
+
+        // отправка файлов на расчет, при добавлении их в форму
+        $('#form_send_file').submit(function (e) {
             $('#start_body').removeClass('d-flex')
             $('#start_body').addClass('d-none')
             $('#clearance_info').removeClass('d-flex')
@@ -226,8 +223,47 @@
             $('body').addClass('grey_background')
             $('#loader-big').removeClass('d-none')
             $('#loader-big').addClass('d-flex')
-            document.getElementById("form_send_file").submit();
-        };
+            e.preventDefault()
+            var data = new FormData($('#form_send_file').get(0))
+            //var form = $(this)
+            var form_send_file = $("#data-ajax-url").attr("data-ajax-url")
+            console.log('form_send_file')
+            $.ajax({
+                type: "POST",
+                url: form_send_file,
+                data: data,
+                cache: false,
+                processData: false,
+                contentType: false,
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function (data) {
+                    $("#inside").html(data)
+                    $('body').removeClass('grey_background')
+                    $('#loader-big').removeClass('d-flex')
+                    $('#loader-big').addClass('d-none')
+                    $('#start_body').removeClass('d-none')
+                    $('#start_body').addClass('d-flex')
+                    var link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(data)
+
+                    var today = new Date();
+                    var dd = String(today.getDate()).padStart(2, '0');
+                    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+                    var yyyy = today.getFullYear();
+                    let hours = today.getHours();
+                    let minutes = today.getMinutes();
+                    let seconds = today.getSeconds();
+
+                    today = mm + '/' + dd + '/' + yyyy + '/' + hours + '/' + minutes + '/' + seconds;
+
+                    link.download = today + '.xlsx';
+                    document.body.appendChild(link);
+                    link.click();
+                }
+            });
+        })
 
 
     </script>

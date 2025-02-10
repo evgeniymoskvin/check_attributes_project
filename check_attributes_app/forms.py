@@ -26,7 +26,7 @@ class UploadFileForm(forms.Form):
     """
     Форма для отправки на главной странице
     """
-    file = forms.FileField(label="Выберите или переместите XLSX файл в это окно",
+    file = forms.FileField(label="Выберите или переместите *.XLSX файл в это окно",
                              widget=forms.FileInput(attrs={'class': 'd-flex, w-100, input_my_form',
                                                              'accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                                                              }))
