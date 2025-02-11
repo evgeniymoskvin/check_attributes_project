@@ -24,9 +24,44 @@
                         </div>
                     </div>
                 </div>
-                <div class="d-flex w-100">
+                <div class="d-flex w-100 my_new_form">
                     {% csrf_token %}
                     {{ form }}
+                </div>
+                <div class="d-flex flex-column mt-3">
+                    <div class="d-flex flex-row form-check">
+                        <input class="form-check-input" type="checkbox" id="checkbox_columns" name="checkbox_columns"
+                               checked>
+                        <label class="text-16px-light ps-3" for="checkbox_columns">
+                            Удалять полностью пустые столбцы
+                        </label>
+                    </div>
+                </div>
+                <div class="d-flex flex-column">
+                    <div class="d-flex flex-row form-check">
+                        <input class="form-check-input" type="checkbox" id="checkbox_rows" name="checkbox_rows" checked>
+                        <label class="text-16px-light ps-3" for="checkbox_rows">
+                            Удалять полностью заполненные строки
+                        </label>
+                    </div>
+                </div>
+                <div class="d-flex flex-column">
+                    <div class="d-flex flex-row form-check">
+                        <input class="form-check-input" type="checkbox" id="checkbox_color" name="checkbox_color"
+                               checked>
+                        <label class="text-16px-light ps-3" for="checkbox_color">
+                            Закрашивать пустые ячейки
+                        </label>
+                    </div>
+                </div>
+                <div class="d-flex flex-column">
+                    <div class="d-flex flex-row form-check">
+                        <input class="form-check-input" type="checkbox" id="checkbox_color_columns"
+                               name="checkbox_color_columns" disabled>
+                        <label class="text-16px-light ps-3" for="checkbox_color_columns">
+                            Не закрашивать полностью пустые столбцы
+                        </label>
+                    </div>
                 </div>
             </div>
         </form>
@@ -48,6 +83,15 @@
 
 
     <script>
+
+        $("#checkbox_columns").change(function () {
+            if ($("#checkbox_columns").is(':checked')) {
+                $("#checkbox_color_columns").attr("disabled", true)
+            } else {
+                $("#checkbox_color_columns").attr("disabled", false)
+            }
+        })
+
         // Проверка на максимальное значение допуска подсчета, 30мм
         function checkInput(el) {
             if (el.value.length > 2) {
@@ -247,7 +291,6 @@
                     $('#start_body').addClass('d-flex')
                     var link = document.createElement('a');
                     link.href = window.URL.createObjectURL(data)
-
                     var today = new Date();
                     var dd = String(today.getDate()).padStart(2, '0');
                     var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
@@ -261,6 +304,15 @@
                     link.download = today + '.xlsx';
                     document.body.appendChild(link);
                     link.click();
+                    $('#good_modal').modal('show');
+                },
+                error: function (data) {
+                    $('#loader-big').removeClass('d-flex')
+                    $('#loader-big').removeClass('d-flex')
+                    $('#loader-big').addClass('d-none')
+                    $('#start_body').removeClass('d-none')
+                    $('#start_body').addClass('d-flex')
+                    $('#error_type_modal').modal('show');
                 }
             });
         })
