@@ -92,7 +92,7 @@ class IndexView(View):
             ws_new_excel_file = new_excel_file.active
             ws_new_excel_file.title = 'Export'
 
-            my_red = openpyxl.styles.colors.Color(rgb='00FF0000')
+            my_red = openpyxl.styles.colors.Color(rgb='FFC000')
             my_fill = openpyxl.styles.fills.PatternFill(patternType='solid', fgColor=my_red)
 
             no_fill = openpyxl.styles.fills.PatternFill(fill_type=None)
@@ -147,7 +147,7 @@ class IndexView(View):
             count_fill = 0
             for column in range(1, book_width + 1):
                 for row in range(2, book_len + 1):
-                    if not worksheet.cell(row, column).value:
+                    if not worksheet.cell(row, column).value or worksheet.cell(row, column).value == 0 or worksheet.cell(row, column).value == '0':
                         count_fill += 1
                         if checkbox_color:  # Закрашивание ячеек
                             worksheet.cell(row, column).fill = my_fill
